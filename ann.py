@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd 
 import json
+import math
 
 # Number of iterations set to 1000
 iterations = 1000
@@ -28,7 +29,7 @@ def deriv_relu(x):
 num_remove = 1
 data = []
 labels = []
-with open('wbdc.dat', "r") as data_file:
+with open('wdbc.dat', "r") as data_file:
     for line in data_file:
         # get last char
         line = line.strip()
@@ -47,7 +48,7 @@ std = X.std(axis=0)
 X = (X - mean) / std
 
 # Initialize weight vectors W_1, W_2, b_1, b_2
-W_1 = np.random.randn(0, 4)
+W_1 = np.random.randn(1, 30)
 W_2 = np.random.randn(0, 4)
 b_1 = np.zeros((d1, 1))
 b_2 = np.zeros(1)
@@ -55,7 +56,7 @@ b_2 = np.zeros(1)
 # Stochastic Gradient Descent
 for x in range(iterations):
     z_1 = W_1 * X.T + b_1
-    if (func_type is 'sigmoid')
+    if (func_type is 'sigmoid'):
         a_1 = sigmoid(z_1)
         g_der = deriv_sigmoid(z_1)
     else: 
@@ -66,14 +67,14 @@ for x in range(iterations):
     f_wb = W_2 * a_1 + b_2
     g = sigmoid(f_wb)  
     
-    deriv_W1 = (W_2.T * (g - y.T)) .* g_der * X / m
+    deriv_W1 = np.multiply((W_2.T * (g - y.T)), g_der * X / m)
     deriv_W2 = (g - y.T) * a_1.T / m
     
-    deriv_b1 = (g - y.T) * g_der.T .* W_2 / m
+    deriv_b1 = np.multiply((g - y.T) * g_der.T, W_2 / m)
     deriv_b2 = sum(g - y.T) / m
 
-    W_1 = W_1 - (step_size .* deriv_W1)
-    W_2 = W_2 - (step_size .* deriv_W2)
+    W_1 = W_1 - np.mutliply(step_size, deriv_W1)
+    W_2 = W_2 - np.mutliply(step_size, deriv_W2)
 
     b_1 = b_1 - (step_size * deriv_b1).T
-    b_2 = b_2 - (step_size .* deriv_b2)
+    b_2 = b_2 - np.mutliply(step_size, deriv_b2)
