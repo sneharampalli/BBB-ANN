@@ -25,7 +25,7 @@ def multi_layer_perceptron(X_train, y_train, step_size, iterations, W_1, W_2, b_
 
     m, d = X_train.shape
     reg_lambda = 0.01
-    # Stochastic Gradient Descent
+    # Batch Gradient Descent
     for x in range(iterations):
         # Forward propagation 
         a_1 = X_train
