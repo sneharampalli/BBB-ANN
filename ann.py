@@ -58,7 +58,7 @@ def twenty_fold_CV(X_splits, y_splits, lr, hidden_units, folds):
     num_hidden_neurons = hidden_units # number of neurons in hidden layer
     num_output_neurons = 1 # number of neurons in output layer
     step_size = lr
-    iterations = 3000 
+    iterations = 2500 
     func_type = 'sigmoid' # can switch out with "relu" to see the results
     
     for i in range(folds):
@@ -94,11 +94,8 @@ def twenty_fold_CV(X_splits, y_splits, lr, hidden_units, folds):
         tes_er += test_error
         f1 = f1_score(y_test, predicted_test_labels)
         f_one += f1
-    print("OVERALL TRAIN ERROR: %f" %(tr_er / folds))
-    print("OVERALL TEST ERROR: %f" %(tes_er / folds))
-    print("OVERALL F1 SCORE: %f" %(f_one / folds))
-    print("CURR LEARNING RATE: %f" %(lr))
-    print("CURR HIDDEN UNITS: %f" %(hidden_units))
+    print("OVERALL TRAIN ACC: %f, OVERALL TEST ACC: %f, OVERALL F1 SCORE: %f" %( (1 - (tr_er / folds)), (1 - (tes_er / folds)), f_one / folds))  
+    print("CURR LEARNING RATE: %f, CURR HIDDEN UNIT: %f" %( lr, hidden_units))
     return (tr_er / folds), (tes_er / folds), (f_one / folds)
 
 if __name__ == "__main__":
@@ -137,11 +134,12 @@ if __name__ == "__main__":
     # leave_one_out_cross_validation(X, y) # This calls leave one out CV, comment out all code below before running this!
 
     folds = 20 # num of folds we want to create    
-    train_errs = np.zeros(40)
-    test_errs = np.zeros(40)
-    f1_scores = np.zeros(40)
-    learning_rate = [1, 0.1, 0.01, 0.005, 0.001]
-    hidden_units = [4, 8, 12, 16, 21, 26, 32, 48]
+    learning_rate = [1, 2, 5, 10]
+    # learning_rate = [0.1, 0.01, 0.005, 0.5, 1, 2, 5, 10]
+    hidden_units = [4, 8, 12, 16, 21, 26, 32, 48, 54, 60]
+    train_errs = np.zeros(len(learning_rate) * len(hidden_units))
+    test_errs = np.zeros(len(learning_rate) * len(hidden_units))
+    f1_scores = np.zeros(len(learning_rate) * len(hidden_units))
     i = 0
     for lr in learning_rate:
         for hid in hidden_units:
