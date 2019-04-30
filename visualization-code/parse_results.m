@@ -19,10 +19,9 @@ function [train_acc, test_acc, f1_score, M] = parse_results(filename, folds)
     figure;
     imagesc(train_acc_vis);
     h = colorbar;
-    title(['\fontsize{25} Training Accuracy for Different Numbers of Hidden ' ...
-        'Units & Learning Rates'])
+    title({'\fontsize{25} Training Accuracy for Different Numbers'; 'of Hidden Units and Learning Rates'})
     ylabel(h, 'Training Accuracy', 'FontSize', 16);
-    set(gca,'FontSize', 13);
+    set(gca,'FontSize', 16);
     xlabel("Learning Rates", 'FontSize', 16);
     ylabel("Number of Hidden Units", 'FontSize', 16);
     axis square;
@@ -47,10 +46,9 @@ function [train_acc, test_acc, f1_score, M] = parse_results(filename, folds)
     figure;
     imagesc(test_acc_vis);
     h = colorbar;
-    title(['\fontsize{25} Testing Accuracy for Different Numbers of Hidden ' ...
-        'Units & Learning Rates'])
+    title({'\fontsize{25} Testing Accuracy for Different Numbers'; 'of Hidden Units and Learning Rates'})
     ylabel(h, 'Testing Accuracy', 'FontSize', 16);
-    set(gca,'FontSize', 13);
+    set(gca,'FontSize', 16);
     xlabel("Learning Rates", 'FontSize', 16);
     ylabel("Number of Hidden Units", 'FontSize', 16);
     axis square;
@@ -75,10 +73,9 @@ function [train_acc, test_acc, f1_score, M] = parse_results(filename, folds)
     figure;
     imagesc(f1_score_vis);
     h = colorbar;
-    title(['\fontsize{25} F_1 Score for Different Numbers of Hidden ' ...
-        'Units & Learning Rates'])
+    title({'\fontsize{25} F_1 Score for Different Numbers'; 'of Hidden Units and Learning Rates'})
     ylabel(h, 'F_1 Score', 'FontSize', 16);
-    set(gca,'FontSize', 13);
+    set(gca,'FontSize', 16);
     xlabel("Learning Rates", 'FontSize', 16);
     ylabel("Number of Hidden Units", 'FontSize', 16);
     axis square;
