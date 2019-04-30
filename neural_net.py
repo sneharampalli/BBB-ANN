@@ -42,14 +42,14 @@ def multi_layer_perceptron(X_train, y_train, step_size, iterations, W_1, W_2, b_
         # Back propagation
         delta_3 = a_3 - y_train
         delta_2 = np.multiply(np.dot(delta_3, W_2.T), der_a_2)
-        deriv_W2 = np.dot(a_2.T, delta_3)
-        deriv_W1 = np.dot(a_1.T, delta_2) 
+        deriv_W2 = np.dot(a_2.T, delta_3) / m
+        deriv_W1 = np.dot(a_1.T, delta_2) / m
 
         deriv_W2 += reg_lambda * W_2
         deriv_W1 += reg_lambda * W_1
 
-        deriv_b1 = np.sum(delta_2, axis=0) 
-        deriv_b2 = np.sum(delta_3, axis=0) 
+        deriv_b1 = np.sum(delta_2, axis=0) / m
+        deriv_b2 = np.sum(delta_3, axis=0) / m
 
         W_1 = W_1 - np.multiply(step_size, deriv_W1)
         W_2 = W_2 - np.multiply(step_size, deriv_W2)

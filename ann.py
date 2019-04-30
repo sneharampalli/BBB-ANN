@@ -5,103 +5,99 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
 import neural_net as nn
 
-def balance_datasets(X, y):
-    num_neg_ones = (y == -1).sum() # num of -1 labels = 212
-    num_pos_ones = (y == 1).sum() # num of +1 labels = 357
-    data_df = pd.concat([pd.DataFrame(np.array(X)), pd.DataFrame(np.array(y))], axis = 1)
-    data_df.columns = ['X', 'y']
-    # data_df.sort_values(by=['y'])
-    print(data_df)
-    # len_X = X.shape[0] # num of training examples
-    
+# This function runs leave one out (569 fold) cross validation on our nueral network
 def leave_one_out_cross_validation(X, y):
     for i in range(len(X)):
         W_1 = np.random.randn(num_input_neurons, num_hidden_neurons) / np.sqrt(num_input_neurons) # weight vector for layer 1
         W_2 = np.random.randn(num_hidden_neurons, num_output_neurons) / np.sqrt(num_hidden_neurons) # weight vector for layer 2
         b_1 = np.zeros((1, num_hidden_neurons)) # bias vector for layer 1
         b_2 = np.zeros((1, num_output_neurons)) # bias vector for layer 2
-        leave_out_index = i
-        X_test = X[i]
+        leave_out_index = i # Data entry index that we leave out for this iteration of CV
+        X_test = X[i] 
         y_test = y[i]
         sub_X_train_1 = X[:i]
         sub_X_train_2 = X[i+1:]
-        X_train = np.concatenate((sub_X_train_1, sub_X_train_2))
+        X_train = np.concatenate((sub_X_train_1, sub_X_train_2)) # Build training set out of all but data entry i
         sub_y_train_1 = y[:i]
         sub_y_train_2 = y[i+1:]
-        y_train = np.concatenate((sub_y_train_1, sub_y_train_2))
+        y_train = np.concatenate((sub_y_train_1, sub_y_train_2)) # Build training set out of all but data entry i
         [W_1, W_2, b_1, b_2] = nn.multi_layer_perceptron(X_train, y_train, 0.0003, 2000, W_1, W_2, b_1, b_2, 'sigmoid')
     
         predicted_labels = np.sign(nn.sigmoid(nn.sigmoid(X_train * W_1 + b_1) * W_2 + b_2) - (1/2))
         predicted_test_labels = np.sign(nn.sigmoid(nn.sigmoid(X_test * W_1 + b_1) * W_2 + b_2) - (1/2))
-        if y_test == 1:
-            num1s += 1
-        elif y_test == -1:
-            num0s += 1
+        
+        # Keep track of number of folds that resulted in correct prediction
         if predicted_test_labels[0] == y_test:
             num_correct += 1
-        train_error = classification_error(predicted_labels, y_train)
-        train_error = int(train_error * 10000)
-        print("Iteration: " + str(i) + " Train error: " + str(train_error/10000) + " " + str(y_test) + " " + str(predicted_test_labels[0][0]))
-
-# CREATE FOLDS BY SPLITTING EACH MALIGNANT AND BENIGN INTO 20 AND PAIRING
-
+    print("OVERALL ACCURACY:: %f" %(num_correct / len(X)))
+    
+# Creating 20 folds of X data and its labels (both training and testing data)
 def build_even_datasets(X, y, folds):
     rows, cols = y.shape
-    neg_ones = np.where(y == -1)[0]
-    pos_ones = np.where(y == 1)[0]
-    even_neg_ones = np.array_split(neg_ones, folds)
-    even_pos_ones = np.array_split(pos_ones, folds)
-    X_index_splits = []
+    neg_ones = np.where(y == -1)[0]  # Count of negative ones in X
+    pos_ones = np.where(y == 1)[0] # Count of positive ones in X
+    np.random.shuffle(neg_ones) # Get random shuffle of data
+    np.random.shuffle(pos_ones)
+    neg_splits = np.array_split(neg_ones, folds)
+    pos_splits = np.array_split(pos_ones, folds)
     X_splits = []
-    for i in range(folds): # getting indices of even splits
-        X_index_splits.append(np.concatenate([even_neg_ones[i], even_pos_ones[i]]))
-    for i in range(folds):
-        curr_split = []
-        for j in range(len(X_index_splits[i])):
-            curr_split.extend(X[X_index_splits[i][j]])
-        X_splits.append(curr_split)
-
-    y_index_splits = []
     y_splits = []
-    for i in range(folds): # getting indices of even splits
-        y_index_splits.append(np.concatenate([even_neg_ones[i], even_pos_ones[i]]))
+    for i in range(folds): # Create new fold with more even split of data
+        fold = np.concatenate([pos_splits[i], neg_splits[i]]) 
+        np.random.shuffle(fold)
+        X_splits.append(np.asarray(X[fold]))
+        y_splits.append(np.asarray(y[fold]))
+    return X_splits, y_splits
+
+# 20-fold cross validation on both learning rates and hidden units 
+def twenty_fold_CV(X_splits, y_splits, lr, hidden_units, folds):
+    tr_er = 0
+    tes_er = 0
+    f_one = 0
+    num_input_neurons = 30 # number of features
+    num_hidden_neurons = hidden_units # number of neurons in hidden layer
+    num_output_neurons = 1 # number of neurons in output layer
+    step_size = lr
+    iterations = 3000 
+    func_type = 'sigmoid' # can switch out with "relu" to see the results
+    
     for i in range(folds):
-        curr_split = []
-        for j in range(len(y_index_splits[i])):
-            curr_split.extend(y[y_index_splits[i][j]])
-        y_splits.append(curr_split)
-    print(len(X))
-    print(len(y))
-    X_train = X[:round(len(X) * (4 / 5))]
-    X_test = X[round(len(X) * (4 / 5)) + 1:]
-    y_train = y[:round(len(y) * (4 / 5))]
-    y_test = y[round(len(y) * (4 / 5)) + 1:]
-    return X_train, X_test, y_train, y_test
+        X_test = X_splits[i]
+        y_test = y_splits[i]
+        X_train = []
+        y_train = []
+        for j in range(folds):
+            if j != i:
+                X_train.extend(X_splits[j]) # Concatenate other folds into train data
+                y_train.extend(y_splits[j]) # Concatenate other folds into train labels
 
-def cross_validation(folds, parameters): # parameters = num of units in hidden layer, learning rate;
-    # for j in range(len(parameters)):
-    #     for i in range(0, len(X), 20):
-    #         X_test = X[i:i+20]
-    #         y_test = y[i:i+20]
-    #         sub_X_train_1 = X[:i]
-    #         sub_X_train_2 = X[i+21:]
-    #         X_train = np.concatenate((sub_X_train_1, sub_X_train_2))
-    #         sub_y_train_1 = y[:i]
-    #         sub_y_train_2 = y[i+21:]
-    #         y_train = np.concatenate((sub_y_train_1, sub_y_train_2))
+        X_train = np.asarray(X_train)
+        y_train = np.asarray(y_train)
+        m, d = X_train.shape
 
-    #         # Initialize weight and bias vectors
-    #         W_1 = np.random.randn(num_input_neurons, parameters(j)) / np.sqrt(num_input_neurons) # weight vector for layer 1
-    #         W_2 = np.random.randn(parameters(j), num_output_neurons) / np.sqrt(num_hidden_neurons) # weight vector for layer 2
-    #         b_1 = np.zeros((1, parameters(j))) # bias vector for layer 1
-    #         b_2 = np.zeros((1, num_output_neurons)) # bias vector for layer 2
-
-    #         [W_1, W_2, b_1, b_2] = multi_layer_perceptron(X_train, y_train, 0.0003, 2000, W_1, W_2, b_1, b_2, 'sigmoid')
-    #         predicted_labels = np.sign(sigmoid(sigmoid(X_train * W_1 + b_1) * W_2 + b_2) - (1/2))
-    #         predicted_test_labels = np.sign(sigmoid(sigmoid(X_test * W_1 + b_1) * W_2 + b_2) - (1/2))
-    #         test_error = test_error + classification_error(predicted_test_labels, y_test)
-    #     test_error_fold = test_error / len(parameters); 
-        print("This fold's test error was: ")
+        # Initialize weight vectors W_1, W_2, b_1, b_2 for a multi layer perceptron
+        W_1 = np.random.randn(num_input_neurons, num_hidden_neurons) / np.sqrt(num_input_neurons) # weight vector for layer 1
+        W_2 = np.random.randn(num_hidden_neurons, num_output_neurons) / np.sqrt(num_hidden_neurons) # weight vector for layer 2
+        b_1 = np.zeros((1, num_hidden_neurons)) # bias vector for layer 1
+        b_2 = np.zeros((1, num_output_neurons)) # bias vector for layer 2
+        [W_1, W_2, b_1, b_2] = nn.multi_layer_perceptron(X_train, y_train, step_size, iterations, W_1, W_2, b_1, b_2, func_type)
+        if (func_type == 'sigmoid'):
+            predicted_labels = np.sign(nn.sigmoid(np.dot(nn.sigmoid(np.dot(X_train, W_1) + b_1), W_2) + b_2) - (1/2))
+            predicted_test_labels = np.sign(nn.sigmoid(np.dot(nn.sigmoid(np.dot(X_test, W_1) + b_1), W_2) + b_2) - (1/2))
+        else:
+            predicted_labels = np.sign(nn.sigmoid(nn.relu(np.dot(X_train, W_1) + b_1) * W_2 + b_2) - (1/2))
+            predicted_test_labels = np.sign(nn.sigmoid(np.dot(nn.relu(np.dot(X_test, W_1)  + b_1), W_2) + b_2) - (1/2))
+        
+        train_error = nn.classification_error(predicted_labels, y_train)
+        tr_er += train_error
+        test_error = nn.classification_error(predicted_test_labels, y_test)
+        tes_er += test_error
+        f1 = f1_score(y_test, predicted_test_labels)
+        f_one += f1
+    print("OVERALL TRAIN ERROR: %f" %(tr_er / folds))
+    print("OVERALL TEST ERROR: %f" %(tes_er / folds))
+    print("OVERALL F1 SCORE: %f" %(f_one / folds))
+    return (tr_er / folds), (tes_er / folds), (f_one / folds)
 
 if __name__ == "__main__":
     # Importing and cleaning data
@@ -128,40 +124,45 @@ if __name__ == "__main__":
     std = X.std(axis=0)
     X = (X - mean) / std
 
-    # Parameters we can play around with
-    
-    num_input_neurons = 30 # number of features
-    num_hidden_neurons = 32 # number of neurons in hidden layer
-    num_output_neurons = 1 # number of neurons in output layer
-    step_size = 0.1
-    iterations = 2000 
-    func_type = 'sigmoid' # can switch out with "relu" to see the results
+    # # Parameters we can play around with
+    # num_input_neurons = 30 # number of features
+    # num_hidden_neurons = 16 # number of neurons in hidden layer
+    # num_output_neurons = 1 # number of neurons in output layer
+    # step_size = 0.03
+    # iterations = 3000 
+    # func_type = 'sigmoid' # can switch out with "relu" to see the results
 
     # leave_one_out_cross_validation(X, y) # This calls leave one out CV, comment out all code below before running this!
 
-    # Split the dataset into 4/5 training, 1/5 testing
     folds = 20 # num of folds we want to create    
-    X_train, X_test, y_train, y_test = build_even_datasets(X, y, folds)
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    train_errs = np.zeros(40)
+    test_errs = np.zeros(40)
+    f1_scores = np.zeros(40)
+    learning_rate = [1, 0.1, 0.01, 0.005, 0.001]
+    hidden_units = [4, 8, 12, 16, 21, 26, 32, 48]
+    i = 0
+    for lr in learning_rate:
+        for hid in hidden_units:
+            X_splits, y_splits = build_even_datasets(X, y, folds)
+            train_errs[i], test_errs[i], f1_scores[i] = twenty_fold_CV(X_splits, y_splits, lr, hid, folds)
+            i = i + 1
 
-    m, d = X_train.shape
+    # # Initialize weight vectors W_1, W_2, b_1, b_2 for a multi layer perceptron
+    # W_1 = np.random.randn(num_input_neurons, num_hidden_neurons) / np.sqrt(num_input_neurons) # weight vector for layer 1
+    # W_2 = np.random.randn(num_hidden_neurons, num_output_neurons) / np.sqrt(num_hidden_neurons) # weight vector for layer 2
+    # b_1 = np.zeros((1, num_hidden_neurons)) # bias vector for layer 1
+    # b_2 = np.zeros((1, num_output_neurons)) # bias vector for layer 2
 
-    # Initialize weight vectors W_1, W_2, b_1, b_2 for a multi layer perceptron
-    W_1 = np.random.randn(num_input_neurons, num_hidden_neurons) / np.sqrt(num_input_neurons) # weight vector for layer 1
-    W_2 = np.random.randn(num_hidden_neurons, num_output_neurons) / np.sqrt(num_hidden_neurons) # weight vector for layer 2
-    b_1 = np.zeros((1, num_hidden_neurons)) # bias vector for layer 1
-    b_2 = np.zeros((1, num_output_neurons)) # bias vector for layer 2
-
-    [W_1, W_2, b_1, b_2] = nn.multi_layer_perceptron(X_train, y_train, step_size, iterations, W_1, W_2, b_1, b_2, func_type)
-    if (func_type == 'sigmoid'):
-        predicted_labels = np.sign(nn.sigmoid(nn.sigmoid(X_train * W_1 + b_1) * W_2 + b_2) - (1/2))
-        predicted_test_labels = np.sign(nn.sigmoid(nn.sigmoid(X_test * W_1 + b_1) * W_2 + b_2) - (1/2))
-    else:
-        predicted_labels = np.sign(nn.sigmoid(nn.relu(X_train * W_1 + b_1) * W_2 + b_2) - (1/2))
-        predicted_test_labels = np.sign(nn.sigmoid(nn.relu(X_test * W_1 + b_1) * W_2 + b_2) - (1/2))
+    # [W_1, W_2, b_1, b_2] = nn.multi_layer_perceptron(X_train, y_train, step_size, iterations, W_1, W_2, b_1, b_2, func_type)
+    # if (func_type == 'sigmoid'):
+    #     predicted_labels = np.sign(nn.sigmoid(nn.sigmoid(X_train * W_1 + b_1) * W_2 + b_2) - (1/2))
+    #     predicted_test_labels = np.sign(nn.sigmoid(nn.sigmoid(X_test * W_1 + b_1) * W_2 + b_2) - (1/2))
+    # else:
+    #     predicted_labels = np.sign(nn.sigmoid(nn.relu(X_train * W_1 + b_1) * W_2 + b_2) - (1/2))
+    #     predicted_test_labels = np.sign(nn.sigmoid(nn.relu(X_test * W_1 + b_1) * W_2 + b_2) - (1/2))
     
-    train_error = nn.classification_error(predicted_labels, y_train)
-    print("TRAIN ERROR: %f" %(train_error))
-    test_error = nn.classification_error(predicted_test_labels, y_test)
-    print("TEST ERROR: %f" %(test_error))
-    print("F1 score: %f" %(f1_score(y_test, predicted_test_labels)))
+    # train_error = nn.classification_error(predicted_labels, y_train)
+    # print("TRAIN ERROR: %f" %(train_error))
+    # test_error = nn.classification_error(predicted_test_labels, y_test)
+    # print("TEST ERROR: %f" %(test_error))
+    # print("F1 score: %f" %(f1_score(y_test, predicted_test_labels)))
