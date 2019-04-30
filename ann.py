@@ -97,6 +97,8 @@ def twenty_fold_CV(X_splits, y_splits, lr, hidden_units, folds):
     print("OVERALL TRAIN ERROR: %f" %(tr_er / folds))
     print("OVERALL TEST ERROR: %f" %(tes_er / folds))
     print("OVERALL F1 SCORE: %f" %(f_one / folds))
+    print("CURR LEARNING RATE: %f" %(lr))
+    print("CURR HIDDEN UNITS: %f" %(hidden_units))
     return (tr_er / folds), (tes_er / folds), (f_one / folds)
 
 if __name__ == "__main__":
