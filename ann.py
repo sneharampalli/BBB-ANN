@@ -134,9 +134,10 @@ if __name__ == "__main__":
     # leave_one_out_cross_validation(X, y) # This calls leave one out CV, comment out all code below before running this!
 
     folds = 20 # num of folds we want to create    
-    learning_rate = [1, 2, 5, 10]
+    learning_rate = [0.1, 0.01, 0.005, 0.5, 1, 2, 5, 10]
+    hidden_units = [5]
     # learning_rate = [0.1, 0.01, 0.005, 0.5, 1, 2, 5, 10]
-    hidden_units = [4, 8, 12, 16, 21, 26, 32, 48, 54, 60]
+    # hidden_units = [4, 8, 12, 16, 21, 26, 32, 48, 54, 60]
     train_errs = np.zeros(len(learning_rate) * len(hidden_units))
     test_errs = np.zeros(len(learning_rate) * len(hidden_units))
     f1_scores = np.zeros(len(learning_rate) * len(hidden_units))
