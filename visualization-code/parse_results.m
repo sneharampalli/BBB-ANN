@@ -4,8 +4,6 @@ function [train_err, test_err, f1_score, M] = parse_results(filename, folds)
     test_err = M(:, 2);
     f1_score = M(:, 3);
     
-    % learning_rate = [1, 0.1, 0.01, 0.005, 0.001]
-    % hidden_units = [4, 8, 12, 16, 21, 26, 32, 48]
     % TRAIN ERROR LOGIC
     train_err_vis = zeros(8, 5);
     [m, d] = size(train_err_vis);
