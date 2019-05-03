@@ -54,7 +54,8 @@ def twenty_fold_CV(X_splits, y_splits, lr, hidden_units, folds):
     tr_er = 0
     tes_er = 0
     f_one = 0
-    num_input_neurons = 30 # number of features
+    num_input_neurons = 10 # original data - number of features
+    # num_input_neurons = 30 # diagnostic data - number of features
     num_hidden_neurons = hidden_units # number of neurons in hidden layer
     num_output_neurons = 1 # number of neurons in output layer
     step_size = lr
@@ -85,17 +86,17 @@ def twenty_fold_CV(X_splits, y_splits, lr, hidden_units, folds):
             predicted_labels = np.sign(nn.sigmoid(np.dot(nn.sigmoid(np.dot(X_train, W_1) + b_1), W_2) + b_2) - (1/2))
             predicted_test_labels = np.sign(nn.sigmoid(np.dot(nn.sigmoid(np.dot(X_test, W_1) + b_1), W_2) + b_2) - (1/2))
         else:
-            predicted_labels = np.sign(nn.sigmoid(nn.relu(np.dot(X_train, W_1) + b_1) * W_2 + b_2) - (1/2))
-            predicted_test_labels = np.sign(nn.sigmoid(np.dot(nn.relu(np.dot(X_test, W_1)  + b_1), W_2) + b_2) - (1/2))
-        
+            predicted_labels = np.sign(nn.sigmoid(np.dot(nn.relu(np.dot(X_train, W_1) + b_1), W_2) + b_2) - (1/2))
+            predicted_test_labels = np.sign(nn.sigmoid(np.dot(nn.relu(np.dot(X_test, W_1) + b_1), W_2) + b_2) - (1/2))
+
         train_error = nn.classification_error(predicted_labels, y_train)
         tr_er += train_error
         test_error = nn.classification_error(predicted_test_labels, y_test)
         tes_er += test_error
         f1 = f1_score(y_test, predicted_test_labels)
         f_one += f1
-    print("OVERALL TRAIN ACC: %f, OVERALL TEST ACC: %f, OVERALL F1 SCORE: %f" %( (1 - (tr_er / folds)), (1 - (tes_er / folds)), f_one / folds))  
-    print("CURR LEARNING RATE: %f, CURR HIDDEN UNIT: %f" %( lr, hidden_units))
+    
+    print("%f,%f,%f" %( (1 - (tr_er / folds)), (1 - (tes_er / folds)), f_one / folds))  
     return (tr_er / folds), (tes_er / folds), (f_one / folds)
 
 if __name__ == "__main__":
@@ -103,12 +104,15 @@ if __name__ == "__main__":
     num_remove = 1
     data = []
     labels = []
-    with open('wdbc.dat', "r") as data_file:
+    with open('breast-cancer-wisconsin.data', "r") as data_file:
+        # Logic for cleaning the original data - number of features
         for line in data_file:
+            if '?' in line:
+                continue
             # get last char
             line = line.strip()
             # Converting the labels to -1 and 1 for binary classification
-            binary_label = -1 if line[-(num_remove):] is 'M' else 1
+            binary_label = -1 if line[-(num_remove):] is '4' else 1
             labels.append(binary_label)
             line = line[:-(num_remove + 1)]
             features = [float(x) for x in line.split(",")]
@@ -117,27 +121,36 @@ if __name__ == "__main__":
         X, y = zip(*c)
         y = np.matrix(y).T
         X = np.matrix(X)
+        # Logic for cleaning the diagnostic data - number of features
+        # with open('wdbc.dat', "r") as data_file:
+        #     for line in data_file:
+        #         # get last char
+        #         line = line.strip()
+        #         # Converting the labels to -1 and 1 for binary classification
+        #         binary_label = -1 if line[-(num_remove):] is 'M' else 1
+        #         labels.append(binary_label)
+        #         line = line[:-(num_remove + 1)]
+        #         features = [float(x) for x in line.split(",")]
+        #         data.append(features)
+        #     c = list(zip(data, labels))
+        #     X, y = zip(*c)
+        #     y = np.matrix(y).T
+        #     X = np.matrix(X)
 
     # Normalization of the data --> raises the error?
     mean = X.mean(axis=0)
     std = X.std(axis=0)
     X = (X - mean) / std
 
-    # # Parameters we can play around with
-    # num_input_neurons = 30 # number of features
-    # num_hidden_neurons = 16 # number of neurons in hidden layer
-    # num_output_neurons = 1 # number of neurons in output layer
-    # step_size = 0.03
-    # iterations = 3000 
-    # func_type = 'sigmoid' # can switch out with "relu" to see the results
-
     # leave_one_out_cross_validation(X, y) # This calls leave one out CV, comment out all code below before running this!
 
     folds = 20 # num of folds we want to create    
+    hidden_units = [3, 4, 5, 8, 12, 16, 21, 26, 32, 48, 54, 60]
+    
     learning_rate = [0.1, 0.01, 0.005, 0.5, 1, 2, 5, 10]
-    hidden_units = [5]
-    # learning_rate = [0.1, 0.01, 0.005, 0.5, 1, 2, 5, 10]
-    # hidden_units = [4, 8, 12, 16, 21, 26, 32, 48, 54, 60]
+    # hidden_units = [3, 4, 5, 8, 12, 16, 21, 26, 32, 48, 54, 60]  -- for diagnostic dataset
+    # hidden_units = [4, 8, 10, 12, 14, 16, 21, 26, 32, 48, 54, 60]  -- for original dataset
+
     train_errs = np.zeros(len(learning_rate) * len(hidden_units))
     test_errs = np.zeros(len(learning_rate) * len(hidden_units))
     f1_scores = np.zeros(len(learning_rate) * len(hidden_units))
@@ -147,23 +160,3 @@ if __name__ == "__main__":
             X_splits, y_splits = build_even_datasets(X, y, folds)
             train_errs[i], test_errs[i], f1_scores[i] = twenty_fold_CV(X_splits, y_splits, lr, hid, folds)
             i = i + 1
-
-    # # Initialize weight vectors W_1, W_2, b_1, b_2 for a multi layer perceptron
-    # W_1 = np.random.randn(num_input_neurons, num_hidden_neurons) / np.sqrt(num_input_neurons) # weight vector for layer 1
-    # W_2 = np.random.randn(num_hidden_neurons, num_output_neurons) / np.sqrt(num_hidden_neurons) # weight vector for layer 2
-    # b_1 = np.zeros((1, num_hidden_neurons)) # bias vector for layer 1
-    # b_2 = np.zeros((1, num_output_neurons)) # bias vector for layer 2
-
-    # [W_1, W_2, b_1, b_2] = nn.multi_layer_perceptron(X_train, y_train, step_size, iterations, W_1, W_2, b_1, b_2, func_type)
-    # if (func_type == 'sigmoid'):
-    #     predicted_labels = np.sign(nn.sigmoid(nn.sigmoid(X_train * W_1 + b_1) * W_2 + b_2) - (1/2))
-    #     predicted_test_labels = np.sign(nn.sigmoid(nn.sigmoid(X_test * W_1 + b_1) * W_2 + b_2) - (1/2))
-    # else:
-    #     predicted_labels = np.sign(nn.sigmoid(nn.relu(X_train * W_1 + b_1) * W_2 + b_2) - (1/2))
-    #     predicted_test_labels = np.sign(nn.sigmoid(nn.relu(X_test * W_1 + b_1) * W_2 + b_2) - (1/2))
-    
-    # train_error = nn.classification_error(predicted_labels, y_train)
-    # print("TRAIN ERROR: %f" %(train_error))
-    # test_error = nn.classification_error(predicted_test_labels, y_test)
-    # print("TEST ERROR: %f" %(test_error))
-    # print("F1 score: %f" %(f1_score(y_test, predicted_test_labels)))
